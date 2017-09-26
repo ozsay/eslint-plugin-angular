@@ -24,10 +24,10 @@ module.exports = {
         }]
     },
     create: function(context) {
-        let angularObjectList = ['controller', 'filter', 'directive'];
+        let angularObjectList = ['controller', 'filter', 'directive', 'component'];
         let badServices = [];
         let map;
-        let message = 'REST API calls should be implemented in a specific service';
+        let message = 'Can\'t use:';
 
         function isArray(item) {
             return Object.prototype.toString.call(item) === '[object Array]';
@@ -72,7 +72,16 @@ module.exports = {
         }
 
         return {
-
+            AssignmentExpression: function(node) {
+                if (node.left.property.name === '$inject') {
+                    node.right.elements.forEach(function(element) {
+                        if (!element.type === 'Literal' ||
+                            badServices.find(object => utils.convertPrefixToRegex(object).test(element.value))) {
+                            context.report(node, 'Can\'t inject ' + element.value, {});
+                        }
+                    });
+                }
+            },
             CallExpression: function(node) {
                 let callee = node.callee;
 
